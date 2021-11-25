@@ -10,53 +10,53 @@ import asyncio
 from player import Player
 
 # async def downloadFile(url, ctx, client, queue):
-#     url = url.replace(prefix + "play", "").strip()
-#     display = Display(visible=0, size=(800, 600))
-#     display.start()
-#     chrome_options = webdriver.ChromeOptions()
-#     chrome_options.add_argument('--no-sandbox')
-#     chrome_options.add_experimental_option('prefs', {
-#     'download.default_directory': f"{os.getcwd()}/AudioFiles",
-#     'download.prompt_for_download': False,
-#     })
-#     driver = webdriver.Chrome(chrome_options=chrome_options)
+    #     url = url.replace(prefix + "play", "").strip()
+    #     display = Display(visible=0, size=(800, 600))
+    #     display.start()
+    #     chrome_options = webdriver.ChromeOptions()
+    #     chrome_options.add_argument('--no-sandbox')
+    #     chrome_options.add_experimental_option('prefs', {
+    #     'download.default_directory': f"{os.getcwd()}/AudioFiles",
+    #     'download.prompt_for_download': False,
+    #     })
+    #     driver = webdriver.Chrome(chrome_options=chrome_options)
 
-#     driver.get(url)
-#     driver.find_element_by_xpath("//button[@class='button welcome__button welcome__button--accept button--enabled']").click()
-#     time.sleep(3)
-#     driver.implicitly_wait(5)
+    #     driver.get(url)
+    #     driver.find_element_by_xpath("//button[@class='button welcome__button welcome__button--accept button--enabled']").click()
+    #     time.sleep(3)
+    #     driver.implicitly_wait(5)
 
-#     #Select download file
-#     driver.find_element_by_xpath("//button[@class='transfer__button']").click()
-#     time.sleep(2)
-#     if driver.find_element_by_xpath("//h6[@class='file-system-entry__title']").text[-3:] == "wav" or driver.find_element_by_xpath("//h6[@class='file-system-entry__title']").text[-3:] == "mp3":
-#         global embed
-#         try:
-#             await embed.delete_embed()
-#         except:
-#             pass
-#         embed = Embed()
-#         title = driver.find_element_by_xpath("//h6[@class='file-system-entry__title']").text
-#         await embed.send_download_embed(ctx, str(title))
+    #     #Select download file
+    #     driver.find_element_by_xpath("//button[@class='transfer__button']").click()
+    #     time.sleep(2)
+    #     if driver.find_element_by_xpath("//h6[@class='file-system-entry__title']").text[-3:] == "wav" or driver.find_element_by_xpath("//h6[@class='file-system-entry__title']").text[-3:] == "mp3":
+    #         global embed
+    #         try:
+    #             await embed.delete_embed()
+    #         except:
+    #             pass
+    #         embed = Embed()
+    #         title = driver.find_element_by_xpath("//h6[@class='file-system-entry__title']").text
+    #         await embed.send_download_embed(ctx, str(title))
 
-#         driver.find_element_by_xpath("//button[@class='transfer__button']").click()
-#         wait = True
-#         while wait:
-#             for fname in os.listdir("./AudioFiles"):
-#                 if not fname.endswith('.crdownload'):
-#                     driver.quit()
-#                     display.stop()
-#                     wait = False
-#                     await queue.add_to_queue(fname)
-#                     await embed.send_download_success(fname)
+    #         driver.find_element_by_xpath("//button[@class='transfer__button']").click()
+    #         wait = True
+    #         while wait:
+    #             for fname in os.listdir("./AudioFiles"):
+    #                 if not fname.endswith('.crdownload'):
+    #                     driver.quit()
+    #                     display.stop()
+    #                     wait = False
+    #                     await queue.add_to_queue(fname)
+    #                     await embed.send_download_success(fname)
 
-#                 queuList = await queue.get_queue()
-#                 if len(queuList) == 1:
-#                     print("oiegoseg")
-#                     await Play.play_downloaded(Play, client, ctx)
+    #                 queuList = await queue.get_queue()
+    #                 if len(queuList) == 1:
+    #                     print("oiegoseg")
+    #                     await Play.play_downloaded(Play, client, ctx)
 
-#     else:
-#         raise ValueError('Invalid File type')
+    #     else:
+    #         raise ValueError('Invalid File type')
         
 guild_players = {}
 
@@ -109,7 +109,7 @@ class Play(commands.Cog):
             await player.connect(ctx, voice_channel)
             songTitle, songUrl, playUrl, duration = await player.get_Title(url)
             await player.queue.add_to_queue(songTitle, songUrl, playUrl, duration)
-            await player.play(playUrl, ctx)
+            await player.play(url,ctx)
 
         elif len(await player.queue.get_queue()) == 0:
             Title, Url, playUrl, duration = await player.get_Title(url)
@@ -273,7 +273,10 @@ class Play(commands.Cog):
                 guild_players[ctx.guild.id] = None
                 await vc.disconnect()
         elif vc == None:
-            del guild_players[ctx.guild.id]
+            try:
+                del guild_players[ctx.guild.id]
+            except:
+                pass
 
     # @commands.Cog.listener()
     # async def on_disconnect(ctx):

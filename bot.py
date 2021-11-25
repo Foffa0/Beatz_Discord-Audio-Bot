@@ -38,4 +38,4 @@ async def on_ready():
     #     os.remove(f"./AudioFiles/{file}")
            
 
-client.run("")
+client.run("ODYzNDg3MjkyNTAwODY5MTQw.YOnnNQ.uGN_y_2l6eIpGpxH3zP--UmLiUE")

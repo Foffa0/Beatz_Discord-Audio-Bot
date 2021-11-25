@@ -24,9 +24,8 @@ class Embed():
         """
         if status == 1:
             embed = discord.Embed(title="Playing", description=f"[{queue[0].title}]({queue[0].url})", colour=0xff8700)
-            if self.message == None:
-                self.message = await ctx.send(embed=embed)
-                return
+            self.message = await ctx.send(embed=embed)
+            return
         elif status == 2:
             embed = discord.Embed(title="Paused", description=f"[{queue[0].title}]({queue[0].url})", colour=0xff8700)
         elif status == 3:

@@ -12,8 +12,10 @@ class Prefix(commands.Cog):
     async def setprefix(self, ctx, *, prefixes=""):
         if len(prefixes) > 5:
             await ctx.send("Prefix too long! (maximum 5 characters)")
+            return
         elif " " in prefixes:
             await ctx.send("No whitespace in prefix allowed!")
+            return
         #You'd obviously need to do some error checking here
         #All I'm doing here is if prefixes is not passed then
         #set it to default 

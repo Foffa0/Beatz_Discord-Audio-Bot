@@ -1,13 +1,11 @@
-FROM debian:stable-slim
+FROM python:3.8-slim-buster
 
-COPY . /opt/source-code
-WORKDIR /opt/source-code
+COPY . .
 
-RUN apt-get update -y
-RUN apt-get -y install python3-pip
-RUN apt-get -y install --upgrade pip
+RUN apt-get -y update
+RUN apt-get -y upgrade
+RUN apt-get install -y ffmpeg
+
 RUN pip3 --no-cache-dir install -r requirements.txt
-
-RUN apt-get install ffmpeg -y
 
 CMD python3 bot.py

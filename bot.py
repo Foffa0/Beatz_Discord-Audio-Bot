@@ -2,8 +2,8 @@ import discord
 from discord import message
 from discord.ext import commands
 import os
-from discord_components import DiscordComponents, Button
 from Settings import Settings
+from discord_components import DiscordComponents
 
 
 token = os.environ.get('BOT_TOKEN')
@@ -21,7 +21,6 @@ async def determine_prefix(bot,message):
         return default_prefix
 
 client = commands.Bot(command_prefix = determine_prefix)
-
 #client = commands.Bot(command_prefix='!')
 
 
@@ -37,5 +36,5 @@ async def on_ready():
     # for file in os.listdir("./AudioFiles"):
     #     os.remove(f"./AudioFiles/{file}")
            
-
-client.run("ODYzNDg3MjkyNTAwODY5MTQw.YOnnNQ.uGN_y_2l6eIpGpxH3zP--UmLiUE")
+# TODO remove token
+client.run("ODYzNDg3MjkyNTAwODY5MTQw.YOnnNQ.NqhF7IbL-7zhoI2tBklMeChMbDs")

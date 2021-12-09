@@ -1,63 +1,9 @@
 import discord
 from discord.ext import commands
-# from pyvirtualdisplay import Display
-# from selenium import webdriver
-# import time
-# import os
-# import asyncio
-# import threading
 import asyncio
 from player import Player
 
-# async def downloadFile(url, ctx, client, queue):
-    #     url = url.replace(prefix + "play", "").strip()
-    #     display = Display(visible=0, size=(800, 600))
-    #     display.start()
-    #     chrome_options = webdriver.ChromeOptions()
-    #     chrome_options.add_argument('--no-sandbox')
-    #     chrome_options.add_experimental_option('prefs', {
-    #     'download.default_directory': f"{os.getcwd()}/AudioFiles",
-    #     'download.prompt_for_download': False,
-    #     })
-    #     driver = webdriver.Chrome(chrome_options=chrome_options)
-
-    #     driver.get(url)
-    #     driver.find_element_by_xpath("//button[@class='button welcome__button welcome__button--accept button--enabled']").click()
-    #     time.sleep(3)
-    #     driver.implicitly_wait(5)
-
-    #     #Select download file
-    #     driver.find_element_by_xpath("//button[@class='transfer__button']").click()
-    #     time.sleep(2)
-    #     if driver.find_element_by_xpath("//h6[@class='file-system-entry__title']").text[-3:] == "wav" or driver.find_element_by_xpath("//h6[@class='file-system-entry__title']").text[-3:] == "mp3":
-    #         global embed
-    #         try:
-    #             await embed.delete_embed()
-    #         except:
-    #             pass
-    #         embed = Embed()
-    #         title = driver.find_element_by_xpath("//h6[@class='file-system-entry__title']").text
-    #         await embed.send_download_embed(ctx, str(title))
-
-    #         driver.find_element_by_xpath("//button[@class='transfer__button']").click()
-    #         wait = True
-    #         while wait:
-    #             for fname in os.listdir("./AudioFiles"):
-    #                 if not fname.endswith('.crdownload'):
-    #                     driver.quit()
-    #                     display.stop()
-    #                     wait = False
-    #                     await queue.add_to_queue(fname)
-    #                     await embed.send_download_success(fname)
-
-    #                 queuList = await queue.get_queue()
-    #                 if len(queuList) == 1:
-    #                     print("oiegoseg")
-    #                     await Play.play_downloaded(Play, client, ctx)
-
-    #     else:
-    #         raise ValueError('Invalid File type')
-        
+     
 guild_players = {}
 
 class Play(commands.Cog):
@@ -70,12 +16,6 @@ class Play(commands.Cog):
     @commands.command(name='play', aliases=['p'])
     async def play(self, ctx):
 
-        # if discord.utils.get(self.client.voice_clients, guild=ctx.guild) == None:
-        #     try:
-        #         del guild_players[ctx.guild.id]
-        #     except:
-        #         pass
-                
         try:
             # Get the current guild's player
             player = guild_players[ctx.guild.id]
@@ -84,41 +24,23 @@ class Play(commands.Cog):
             guild_players[ctx.guild.id] = Player(self.client)
             player = guild_players[ctx.guild.id]
 
-
-        # if self.player == None:
-        #     self.player = Player(self.client)
-
         prefix = await self.client.get_prefix(ctx.message)
 
-        url = ctx.message.content.replace(prefix + "play", "")
         try:
             voice_channel = ctx.author.voice.channel
         except:
-            await ctx.send(str(ctx.message.author.name) + " is not in a channel.")
+            msg = await ctx.send(str(ctx.message.author.name) + " is not in a voice channel.", delete_after = 10.0)
             return
 
-        
+        # prepare the url
+        url = ctx.message.content.replace(prefix + "play", "")
         if "www.youtube.com/watch?v=" in str(url):
             if "&" in str(url):
                 url = str(url).rpartition('&')[0].replace("watch?v=","")
             else:
-                url = str(url).replace("watch?v=","")
+                url = str(url).replace("watch?v=","").replace("youtube.com", "youtu.be")
 
-
-        if not await player.is_connected(ctx):
-            await player.connect(ctx, voice_channel)
-            songTitle, songUrl, playUrl, duration = await player.get_Title(url)
-            await player.queue.add_to_queue(songTitle, songUrl, playUrl, duration)
-            await player.play(url,ctx)
-
-        elif len(await player.queue.get_queue()) == 0:
-            Title, Url, playUrl, duration = await player.get_Title(url)
-            await player.queue.add_to_queue(Title, Url, playUrl, duration)
-            await player.play(playUrl, ctx)
-        else:
-            Title, Url, playUrl, duration = await player.get_Title(url)
-            await player.queue.add_to_queue(Title, Url, playUrl, duration)
-            await player.embed.send_playing_status(ctx, 3, await player.queue.get_queue())
+        await player.addSong(url, ctx)
 
     @commands.command()
     async def pause(self, ctx):
@@ -146,8 +68,23 @@ class Play(commands.Cog):
         player = guild_players[ctx.guild.id]
         if not await player.is_connected(ctx):
             return
-        await player.stop(ctx)
-        #await self.player.play((await self.player.queue.get_queue())[0].url, ctx)
+        await player.stop(ctx, False)
+        await player.queue.remove_from_queue((await player.queue.get_queue())[0].id)
+        await player.play((await player.queue.get_queue())[0].url, ctx, (await player.queue.get_queue())[0].player)
+
+    @commands.command()
+    async def skipTo(self, ctx, position):
+        player = guild_players[ctx.guild.id]
+        if not await player.is_connected(ctx):
+            return
+        for song in range(position):
+            try:
+                await player.queue.remove_from_queue((await player.queue.get_queue())[0].id)
+            except:
+                pass
+        await player.stop(ctx, False)
+        if len(await player.queue.get_queue()) > 0:
+            await player.play((await player.queue.get_queue())[0].url, ctx, (await player.queue.get_queue())[0].player)
 
     @commands.command()
     async def queue(self, ctx):
@@ -155,7 +92,7 @@ class Play(commands.Cog):
             player = guild_players[ctx.guild.id]
         except KeyError:
             embed = discord.Embed(title=f"\u200b", description="I am not connected to a voice channel", colour=0xff8700)
-            await ctx.send(embed=embed)
+            msg = await ctx.send(embed=embed, delete_after = 10.0)
             return
             
         queue = await player.queue.get_queue()
@@ -172,8 +109,29 @@ class Play(commands.Cog):
         vc.stop()
        # await queue.clear_queue()
         await ctx.message.add_reaction("\U0001F44B")
+        player = guild_players[ctx.guild.id]
+        await player.disconnect()
         del guild_players[ctx.guild.id]
         await vc.disconnect()
+
+    @commands.command()
+    async def dm_command(self, ctx, guild_id, channel_id, url):
+        if isinstance(ctx.channel, discord.channel.DMChannel):
+            if ctx.author.id == 581459918477852672:
+                
+                player = Player(self.client)
+                await player.play_from_dm_command(guild_id, channel_id, url)
+
+            # channel = ctx.message.author.voice.channel
+
+            # voice = discord.utils.get(guild.voice_channels, id=channel_id)
+
+            # voice_client = discord.utils.get(self.client.voice_clients, guild=ctx.guild)
+
+            # if voice_client == None:
+            #     await voice.connect()
+            # else:
+            #     await voice_client.move_to(channel)
 
 
         # if os.listdir("./AudioFiles") == []:

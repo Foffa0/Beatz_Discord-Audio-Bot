@@ -1,4 +1,7 @@
-__pycache__
+__pycache__/
 .discordAudioBot
 geckodriver.log
 test
+.git
+DockerfileBackup.txt
+data_files/*

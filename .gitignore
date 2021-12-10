@@ -3,3 +3,4 @@ __pycache__/
 geckodriver.log
 DockerfileBackup.txt
 .git
+DockerfileOld.txt

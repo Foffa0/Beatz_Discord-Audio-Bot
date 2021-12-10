@@ -36,5 +36,5 @@ async def on_ready():
     # for file in os.listdir("./AudioFiles"):
     #     os.remove(f"./AudioFiles/{file}")
            
-# TODO remove token
-client.run("ODYzNDg3MjkyNTAwODY5MTQw.YOnnNQ.NqhF7IbL-7zhoI2tBklMeChMbDs")
+
+client.run(token)

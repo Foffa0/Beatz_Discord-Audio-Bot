@@ -228,10 +228,13 @@ class Play(commands.Cog):
             # You should also check if the song is still playing
             await asyncio.sleep(600)
             if vc is not None and len(vc.channel.members) == 1:
+                player = guild_players[ctx.guild.id]
+                await player.disconnect()
                 guild_players[ctx.guild.id] = None
-                await vc.disconnect()
         elif vc == None:
             try:
+                player = guild_players[ctx.guild.id]
+                await player.disconnect()
                 del guild_players[ctx.guild.id]
             except:
                 pass

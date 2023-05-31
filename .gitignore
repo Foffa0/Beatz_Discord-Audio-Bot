@@ -4,3 +4,6 @@ geckodriver.log
 DockerfileBackup.txt
 .git
 DockerfileOld.txt
+ffmpeg.exe
+ffplay.exe
+ffprobe.exe

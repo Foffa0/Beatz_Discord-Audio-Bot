@@ -67,7 +67,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
 class Play(commands.Cog):
 
     def __init__(self, client: commands.Bot):
-        self.client = client
+        self.client: commands.Bot = client
         #self.player = None
 
     @commands.Cog.listener()
@@ -89,20 +89,22 @@ class Play(commands.Cog):
     async def play(self, interaction: discord.Interaction, url: str):
         """Plays a file from youtube"""
         channel = interaction.channel
+        
         user_voice = interaction.user.voice
 
         if utils.get_guildplayer(interaction.guild) == None:
             #utils.guild_players[interaction.guild] = Player(self.client, interaction.guild)
             utils.setGuildPlayer(interaction.guild, Player(self.client, interaction.guild))
         player: Player = utils.get_guildplayer(interaction.guild)
+        player.last_channel = channel
 
         if not interaction.user.voice:
-            await interaction.response.send_message("You are not in a voice channel!")
+            await interaction.response.send_message("You are not in a voice channel!", delete_after=30)
             return
         else:
             bot_voice = interaction.guild.voice_client
 
-        if bot_voice:
+        if bot_voice != None:
             # we're in a channel already
             if not bot_voice.channel.id == user_voice.channel.id:
                 # move channels now - we're in VC but not the user's VC
@@ -112,10 +114,19 @@ class Play(commands.Cog):
             await player.connect_voice_channel(user_voice.channel)
 
         await interaction.response.send_message(embed=player.playerEmbed.generalEmbed(config.EMBED_SEARCH_TITLE + f" {url}", config.EMBED_SEARCH_DESCRIPTION), silent=True)
-        embed, view = await player.add_song(url)
-        msg = await channel.send(embed=embed, view=view, silent=True)
-        await interaction.delete_original_response()
-        player.playerEmbed.msg = msg
+        async with interaction.channel.typing():
+            embed, view = await player.add_song(url)
+            msg = await channel.send(embed=embed, view=view, silent=True)
+            await interaction.delete_original_response()
+            if view != None:
+                player.playerEmbed.msg = msg
+            else:
+                player.delete_messages.append(msg)
+            # try:
+            embed, view = player.queueEmbed.build()
+            await player.queueEmbed.msg.edit(embed=embed, view=view)
+        # except:
+        #     pass
         # await interaction.response.send_message(embed=embed, view=view)
         # self.client.loop.create_task(coro)
 
@@ -132,7 +143,7 @@ class Play(commands.Cog):
             await player.pause()
             await interaction.response.send_message(content="Paused")
             return
-        await interaction.response.send_message("I am not connected to a voice channel!", ephemeral=True)
+        await interaction.response.send_message("I am not connected to a voice channel!", ephemeral=True, delete_after=30)
         
     @app_commands.command(name="resume", description="Resume the player")
     async def resume(self, interaction: discord.Interaction):
@@ -154,8 +165,13 @@ class Play(commands.Cog):
         if not player == None:
             await player.skip()
             await interaction.response.send_message("Skipped to the next song", delete_after=30)
+            try:
+                embed, view = player.queueEmbed.build()
+                await player.queueEmbed.msg.edit(embed=embed, view=view)
+            except:
+                pass
         else:
-            await interaction.response.send_message("I am not connected to a voice channel!", ephemeral=True)
+            await interaction.response.send_message("I am not connected to a voice channel!", ephemeral=True, delete_after=30)
 
     @app_commands.command(name="previous", description="Play the previous song")
     async def previous(self, interaction: discord.Interaction):
@@ -163,9 +179,14 @@ class Play(commands.Cog):
         player: Player = utils.get_guildplayer(interaction.guild)
         if not player == None:
             await player.previous()
-            await interaction.response.send_message("PLaying previous song", delete_after=30)
+            await interaction.response.send_message("Playing previous song", delete_after=30)
+            try:
+                embed, view = player.queueEmbed.build()
+                await player.queueEmbed.msg.edit(embed=embed, view=view)
+            except:
+                pass
         else:
-            await interaction.response.send_message("I am not connected to a voice channel!", ephemeral=True)
+            await interaction.response.send_message("I am not connected to a voice channel!", ephemeral=True, delete_after=30)
 
     @app_commands.command(name="clear", description="Pause the player")
     async def clear(self, interaction: discord.Interaction):
@@ -174,8 +195,48 @@ class Play(commands.Cog):
         if not player == None:
             await player.clear()
             await interaction.response.send_message("Queue successfully cleared!")
+            try:
+                embed, view = self.player.queueEmbed.build()
+                await player.queueEmbed.msg.edit(embed=embed, view=view)
+            except:
+                pass
             return
-        await interaction.response.send_message("I am not connected to a voice channel!", ephemeral=True)
+        await interaction.response.send_message("I am not connected to a voice channel!", ephemeral=True, delete_after=30)
+
+    @app_commands.command(name='queue', description='Displays the song queue')
+    async def queue(self, interaction: discord.Interaction):
+        player: Player = utils.get_guildplayer(interaction.guild)
+        if not player == None:
+            try: 
+                await player.queueEmbed.msg.delete()
+                player.queueEmbed.msg = None
+            except:
+                pass
+            embed, view = player.queueEmbed.build()
+            await interaction.response.send_message(embed=embed, view=view)
+            player.queueEmbed.msg = await interaction.original_response()
+        else:
+            await interaction.response.send_message("I am not connected to a voice channel!", ephemeral=True)
+        
+
+
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
+        if member.name == self.client.user.name and after.channel == None:
+            player: Player = utils.get_guildplayer(before.channel.guild)
+            try:
+                await player.disconnect_voice_channel(before.channel.guild.voice_client)
+            except:
+                pass
+            if not player == None:
+                await player.playerEmbed.msg.delete()
+                await player.queueEmbed.msg.delete()
+                del utils.guild_players[before.channel.guild]
+        # bot_voice = ctx.guild.voice_client
+        # await ctx.guild.voice_client.cleanup()
+        # print(bot_voice)
+        # if bot_voice != None:
+        #     print("Still connected")
 
     # at this point; the user is in a VC and we're not
     # async with interaction.channel.typing():
@@ -448,10 +509,10 @@ class Play(commands.Cog):
 #                 del guild_players[ctx.guild.id]
 #             except:
 #                 pass
-
-#     # @commands.Cog.listener()
-#     # async def on_disconnect(ctx):
-#     #     del guild_players[ctx.guild.id]
+#!----------------------------->
+    # @commands.Cog.listener()
+    # async def on_disconnect(ctx):
+    #     del guild_players[ctx.guild.id]
 
 async def setup(client):
     await client.add_cog(Play(client))

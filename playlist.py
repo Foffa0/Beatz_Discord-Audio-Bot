@@ -44,6 +44,14 @@ class Playlist:
         #if current_song != None:
         #self.playque.insert(0, self.playque[0])
         return self.playque[0]
+    
+    def skip(self, index):
+        for x in range(index - 1):
+            self.playhistory.append(self.playque.popleft())
+            
+            if len(self.playhistory) > config.MAX_HISTORY_LENGTH:
+                self.playhistory.popleft()
+        
 
     def shuffle(self):
         random.shuffle(self.playque)
